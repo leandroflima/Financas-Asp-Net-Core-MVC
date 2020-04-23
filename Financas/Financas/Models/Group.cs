@@ -1,6 +1,6 @@
 ﻿namespace Financas.Models
 {
-    public class Group : ModelBase
+    public class Group : Entity
     {
     }
 }

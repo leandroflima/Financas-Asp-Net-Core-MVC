@@ -1,152 +1,107 @@
-﻿using Financas.Data;
-using Financas.Models;
+﻿using Financas.Models;
+using Financas.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace Financas.Controllers
 {
     public class GroupsController : Controller
     {
-        private readonly FinancasContext _context;
+        private readonly GroupService _service;
 
-        public GroupsController(FinancasContext context)
+        public GroupsController(GroupService service)
         {
-            _context = context;
+            _service = service;
         }
 
         // GET: Groups
-        public async Task<IActionResult> Index()
+        public ActionResult<List<Group>> Index()
         {
-            return View(await _context.Group.ToListAsync());
+            return View(_service.Get());
         }
 
         // GET: Groups/Details/5
-        public async Task<IActionResult> Details(Guid? id)
+        public ActionResult<Group> Details(string id)
         {
-            if (id == null)
+            var item = _service.Get(id);
+            if (item == null)
             {
                 return NotFound();
             }
 
-            var @group = await _context.Group
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (@group == null)
-            {
-                return NotFound();
-            }
-
-            return View(@group);
+            return View(item);
         }
 
-        // GET: Groups/Create
-        public IActionResult Create()
+        // GET: Accounts/Create
+        public ActionResult<Group> Create()
         {
             return View();
         }
 
         // POST: Groups/Create
-        // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
-        // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Description")] Group @group)
+        public ActionResult<Group> Create([Bind("Id,Description")] Group item)
         {
             if (ModelState.IsValid)
             {
-                @group.Id = Guid.NewGuid();
-                _context.Add(@group);
-                await _context.SaveChangesAsync();
+                _service.Create(item);
                 return RedirectToAction(nameof(Index));
             }
-            return View(@group);
+            return View(item);
         }
 
         // GET: Groups/Edit/5
-        public async Task<IActionResult> Edit(Guid? id)
+        public ActionResult<Group> Edit(string id)
         {
             if (id == null)
             {
                 return NotFound();
             }
 
-            var @group = await _context.Group.FindAsync(id);
-            if (@group == null)
+            var item = _service.Get(id);
+            if (item == null)
             {
                 return NotFound();
             }
-            return View(@group);
+            return View(item);
         }
 
         // POST: Groups/Edit/5
-        // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
-        // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("Id,Description")] Group @group)
+        public ActionResult<Group> Edit(string id, [Bind("Id,Description")] Group item)
         {
-            if (id != @group.Id)
+            var itemGet = _service.Get(id);
+            if (itemGet == null)
             {
                 return NotFound();
             }
 
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    _context.Update(@group);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!GroupExists(@group.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
-            }
-            return View(@group);
+            item.Id = id;
+            _service.Update(id, item);
+            return RedirectToAction(nameof(Index));
         }
 
         // GET: Groups/Delete/5
-        public async Task<IActionResult> Delete(Guid? id)
+        public ActionResult<Group> Delete(string id)
         {
-            if (id == null)
+            var item = _service.Get(id);
+            if (item == null)
             {
                 return NotFound();
             }
-
-            var @group = await _context.Group
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (@group == null)
-            {
-                return NotFound();
-            }
-
-            return View(@group);
+            return View(item);
         }
 
         // POST: Groups/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(Guid id)
+        public ActionResult<Group> DeleteConfirmed(string id)
         {
-            var @group = await _context.Group.FindAsync(id);
-            _context.Group.Remove(@group);
-            await _context.SaveChangesAsync();
+            var item = _service.Get(id);
+            _service.Remove(item);
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool GroupExists(Guid id)
-        {
-            return _context.Group.Any(e => e.Id == id);
         }
     }
 }

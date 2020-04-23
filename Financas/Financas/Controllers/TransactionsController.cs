@@ -1,8 +1,10 @@
-﻿using Financas.Data;
-using Financas.Models;
+﻿using Financas.Models;
+using Financas.Services;
+using Financas.ViewModel;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -10,143 +12,129 @@ namespace Financas.Controllers
 {
     public class TransactionsController : Controller
     {
-        private readonly FinancasContext _context;
+        private readonly TransactionService _service;
+        private readonly List<SubGroup> _subGroups;
+        private readonly List<Account> _accounts;
 
-        public TransactionsController(FinancasContext context)
+        public TransactionsController(TransactionService service, SubGroupService subGroupService, AccountService accountService)
         {
-            _context = context;
+            _service = service;
+            _subGroups = subGroupService.Get();
+            _accounts = accountService.Get();
         }
 
         // GET: Transactions
-        public async Task<IActionResult> Index()
+        public ActionResult<List<TransactionViewModel>> Index()
         {
-            return View(await _context.Transaction.ToListAsync());
+            var items = _service.Get();
+
+            return View(items.Select(a => new TransactionViewModel(a, _accounts, _subGroups)));
         }
 
         // GET: Transactions/Details/5
-        public async Task<IActionResult> Details(Guid? id)
+        public ActionResult<TransactionViewModel> Details(string id)
         {
-            if (id == null)
+            var item = _service.Get(id);
+            if (item == null)
             {
                 return NotFound();
             }
 
-            var transaction = await _context.Transaction
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (transaction == null)
-            {
-                return NotFound();
-            }
-
-            return View(transaction);
+            return View(new TransactionViewModel(item, _accounts, _subGroups));
         }
 
         // GET: Transactions/Create
-        public IActionResult Create()
+        public ActionResult<TransactionViewModel> Create()
         {
-            return View();
+            return View(new TransactionViewModel(new Transaction(), _accounts, _subGroups));
         }
 
         // POST: Transactions/Create
-        // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
-        // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("CreateOn,PaymentOn,AccountId,SubGroupId,Value,Type,Status,Id,Description")] Transaction transaction)
+        public ActionResult<TransactionViewModel> Create(TransactionViewModel transaction)
         {
+            var item = new Transaction 
+            { 
+                Description = transaction.Description, 
+                AccountId = transaction.Account.Id,
+                SubGroupId = transaction.SubGroup.Id,
+                CreateOn = DateTime.Now,
+                PaymentOn = DateTime.MinValue,
+                Status = Models.Enum.TransactionStatus.Pending,
+                Type = transaction.Type,
+                Value = transaction.Value
+            };
+
             if (ModelState.IsValid)
             {
-                transaction.Id = Guid.NewGuid();
-                _context.Add(transaction);
-                await _context.SaveChangesAsync();
+                _service.Create(item);
                 return RedirectToAction(nameof(Index));
             }
-            return View(transaction);
+            return View(item);
         }
 
         // GET: Transactions/Edit/5
-        public async Task<IActionResult> Edit(Guid? id)
+        public ActionResult<TransactionViewModel> Edit(string id)
         {
             if (id == null)
             {
                 return NotFound();
             }
 
-            var transaction = await _context.Transaction.FindAsync(id);
-            if (transaction == null)
+            var item = _service.Get(id);
+            if (item == null)
             {
                 return NotFound();
             }
-            return View(transaction);
+
+            return View(new TransactionViewModel(item, _accounts, _subGroups));
         }
 
         // POST: Transactions/Edit/5
-        // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
-        // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("CreateOn,PaymentOn,AccountId,SubGroupId,Value,Type,Status,Id,Description")] Transaction transaction)
+        public ActionResult<TransactionViewModel> Edit(string id, TransactionViewModel transaction)
         {
-            if (id != transaction.Id)
+            var item = _service.Get(id);
+            if (item == null)
             {
                 return NotFound();
             }
 
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    _context.Update(transaction);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!TransactionExists(transaction.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
-            }
-            return View(transaction);
+            item.Description = transaction.Description;
+            item.AccountId = transaction.Account.Id;
+            item.SubGroupId = transaction.SubGroup.Id;
+            item.CreateOn = transaction.CreateOn;
+            item.PaymentOn = transaction.PaymentOn;
+            item.Status = transaction.Status;
+            item.Type = transaction.Type;
+            item.Value = transaction.Value;
+
+            _service.Update(id, item);
+            return RedirectToAction(nameof(Index));
         }
 
         // GET: Transactions/Delete/5
-        public async Task<IActionResult> Delete(Guid? id)
+        public ActionResult<TransactionViewModel> Delete(string id)
         {
-            if (id == null)
+            var item = _service.Get(id);
+            if (item == null)
             {
                 return NotFound();
             }
 
-            var transaction = await _context.Transaction
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (transaction == null)
-            {
-                return NotFound();
-            }
-
-            return View(transaction);
+            return View(new TransactionViewModel(item, _accounts, _subGroups));
         }
 
         // POST: Transactions/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(Guid id)
+        public ActionResult<TransactionViewModel> DeleteConfirmed(string id)
         {
-            var transaction = await _context.Transaction.FindAsync(id);
-            _context.Transaction.Remove(transaction);
-            await _context.SaveChangesAsync();
+            var item = _service.Get(id);
+            _service.Remove(item);
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool TransactionExists(Guid id)
-        {
-            return _context.Transaction.Any(e => e.Id == id);
         }
     }
 }

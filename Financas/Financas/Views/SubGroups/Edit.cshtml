@@ -1,4 +1,4 @@
-﻿@model Financas.Models.SubGroup
+﻿@model Financas.ViewModel.SubGroupViewModel
 
 @{
     ViewData["Title"] = "Edit";
@@ -13,18 +13,19 @@
         <form asp-action="Edit">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <div class="form-group">
-                <label asp-for="GroupId" class="control-label"></label>
-                <input asp-for="GroupId" class="form-control" />
-                <span asp-validation-for="GroupId" class="text-danger"></span>
+                <label asp-for="Group" class="control-label"></label>
+                <select asp-for="Group.Id" class="form-control" asp-items="Model.Groups">
+                    <option selected disabled>Select Group</option>
+                </select>
+                <span asp-validation-for="Group" class="text-danger"></span>
             </div>
-            <input type="hidden" asp-for="Id" />
             <div class="form-group">
                 <label asp-for="Description" class="control-label"></label>
                 <input asp-for="Description" class="form-control" />
                 <span asp-validation-for="Description" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <input type="submit" value="Save" class="btn btn-primary" />
+                <input type="submit" value="Save" class="btn btn-primary" asp-route-id="@Model.Id" />
             </div>
         </form>
     </div>

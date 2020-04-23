@@ -1,8 +1,9 @@
-﻿using Financas.Data;
-using Financas.Models;
+﻿using Financas.Models;
+using Financas.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -10,143 +11,101 @@ namespace Financas.Controllers
 {
     public class AccountsController : Controller
     {
-        private readonly FinancasContext _context;
+        private readonly AccountService _service;
 
-        public AccountsController(FinancasContext context)
+        public AccountsController(AccountService service)
         {
-            _context = context;
+            _service = service;
         }
 
         // GET: Accounts
-        public async Task<IActionResult> Index()
+        public ActionResult<List<Account>> Index()
         {
-            return View(await _context.Account.ToListAsync());
+            return View(_service.Get());
         }
 
         // GET: Accounts/Details/5
-        public async Task<IActionResult> Details(Guid? id)
+        public ActionResult<Account> Details(string id)
         {
-            if (id == null)
+            var item = _service.Get(id);
+            if (item == null)
             {
                 return NotFound();
             }
 
-            var account = await _context.Account
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (account == null)
-            {
-                return NotFound();
-            }
-
-            return View(account);
+            return View(item);
         }
 
         // GET: Accounts/Create
-        public IActionResult Create()
+        public ActionResult<Account> Create()
         {
             return View();
         }
 
         // POST: Accounts/Create
-        // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
-        // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Bank,Agency,Number,Status,Type,Id,Description")] Account account)
+        public ActionResult<Account> Create([Bind("Type,Description,Bank,Agency,Number,Status")] Account item)
         {
             if (ModelState.IsValid)
             {
-                account.Id = Guid.NewGuid();
-                _context.Add(account);
-                await _context.SaveChangesAsync();
+                _service.Create(item);
                 return RedirectToAction(nameof(Index));
             }
-            return View(account);
+            return View(item);
         }
 
         // GET: Accounts/Edit/5
-        public async Task<IActionResult> Edit(Guid? id)
+        public ActionResult<Account> Edit(string id)
         {
             if (id == null)
             {
                 return NotFound();
             }
 
-            var account = await _context.Account.FindAsync(id);
-            if (account == null)
+            var item = _service.Get(id);
+            if (item == null)
             {
                 return NotFound();
             }
-            return View(account);
+            return View(item);
         }
 
         // POST: Accounts/Edit/5
-        // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
-        // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("Bank,Agency,Number,Status,Type,Id,Description")] Account account)
+        public ActionResult<Account> Edit(string id, [Bind("Id,Type,Description,Bank,Agency,Number,Status")] Account item)
         {
-            if (id != account.Id)
+            var itemGet = _service.Get(id);
+            if (itemGet == null)
             {
                 return NotFound();
             }
 
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    _context.Update(account);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!AccountExists(account.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
-            }
-            return View(account);
+            item.Id = id;
+            _service.Update(id, item);
+            return RedirectToAction(nameof(Index));
         }
 
         // GET: Accounts/Delete/5
-        public async Task<IActionResult> Delete(Guid? id)
+        public ActionResult<Account> Delete(string id)
         {
-            if (id == null)
+            var item = _service.Get(id);
+            if (item == null)
             {
                 return NotFound();
             }
-
-            var account = await _context.Account
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (account == null)
-            {
-                return NotFound();
-            }
-
-            return View(account);
+            return View(item);
         }
 
         // POST: Accounts/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(Guid id)
+        public ActionResult<Account> DeleteConfirmed(string id)
         {
-            var account = await _context.Account.FindAsync(id);
-            _context.Account.Remove(account);
-            await _context.SaveChangesAsync();
+            var item = _service.Get(id);
+            _service.Remove(item);
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool AccountExists(Guid id)
-        {
-            return _context.Account.Any(e => e.Id == id);
         }
     }
 }

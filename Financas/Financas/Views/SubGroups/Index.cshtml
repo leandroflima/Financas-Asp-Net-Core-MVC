@@ -1,4 +1,4 @@
-﻿@model IEnumerable<Financas.Models.SubGroup>
+﻿@model IEnumerable<Financas.ViewModel.SubGroupViewModel>
 
 @{
     ViewData["Title"] = "Index";
@@ -13,7 +13,7 @@
     <thead>
         <tr>
             <th>
-                @Html.DisplayNameFor(model => model.GroupId)
+                @Html.DisplayNameFor(model => model.Group.Description)
             </th>
             <th>
                 @Html.DisplayNameFor(model => model.Description)
@@ -25,7 +25,7 @@
 @foreach (var item in Model) {
         <tr>
             <td>
-                @Html.DisplayFor(modelItem => item.GroupId)
+                @Html.DisplayFor(modelItem => item.Group.Description)
             </td>
             <td>
                 @Html.DisplayFor(modelItem => item.Description)

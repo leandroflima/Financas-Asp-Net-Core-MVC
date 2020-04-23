@@ -1,152 +1,117 @@
-﻿using Financas.Data;
-using Financas.Models;
+﻿using Financas.Models;
+using Financas.Services;
+using Financas.ViewModel;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System;
+using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace Financas.Controllers
 {
     public class SubGroupsController : Controller
     {
-        private readonly FinancasContext _context;
+        private readonly SubGroupService _service;
+        private readonly List<Group> _groups;
 
-        public SubGroupsController(FinancasContext context)
+        public SubGroupsController(SubGroupService service, GroupService groupService)
         {
-            _context = context;
+            _service = service;
+            _groups = groupService.Get();
         }
 
         // GET: SubGroups
-        public async Task<IActionResult> Index()
+        public ActionResult<List<SubGroupViewModel>> Index()
         {
-            return View(await _context.SubGroup.ToListAsync());
+            var items = _service.Get();
+
+            return View(items.Select(a => new SubGroupViewModel(a, _groups)));
         }
 
-        // GET: SubGroups/Details/5
-        public async Task<IActionResult> Details(Guid? id)
+        // GET: Groups/Details/5
+        public ActionResult<SubGroupViewModel> Details(string id)
         {
-            if (id == null)
+            var item = _service.Get(id);
+            if (item == null)
             {
                 return NotFound();
             }
 
-            var subGroup = await _context.SubGroup
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (subGroup == null)
-            {
-                return NotFound();
-            }
-
-            return View(subGroup);
+            return View(new SubGroupViewModel(item, _groups));
         }
 
         // GET: SubGroups/Create
-        public IActionResult Create()
+        public ActionResult<SubGroupViewModel> Create()
         {
-            return View();
+            return View(new SubGroupViewModel(new SubGroup(), _groups));
         }
 
         // POST: SubGroups/Create
-        // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
-        // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("GroupId,Id,Description")] SubGroup subGroup)
+        public ActionResult<SubGroupViewModel> Create(SubGroupViewModel subGroup)
         {
+            var item = new SubGroup { Description = subGroup.Description, GroupId = subGroup.Group.Id };
             if (ModelState.IsValid)
             {
-                subGroup.Id = Guid.NewGuid();
-                _context.Add(subGroup);
-                await _context.SaveChangesAsync();
+                _service.Create(item);
                 return RedirectToAction(nameof(Index));
             }
-            return View(subGroup);
+            return View(item);
         }
 
         // GET: SubGroups/Edit/5
-        public async Task<IActionResult> Edit(Guid? id)
+        public ActionResult<SubGroupViewModel> Edit(string id)
         {
             if (id == null)
             {
                 return NotFound();
             }
 
-            var subGroup = await _context.SubGroup.FindAsync(id);
-            if (subGroup == null)
+            var item = _service.Get(id);
+            if (item == null)
             {
                 return NotFound();
             }
-            return View(subGroup);
+
+            return View(new SubGroupViewModel(item, _groups));
         }
 
         // POST: SubGroups/Edit/5
-        // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
-        // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("GroupId,Id,Description")] SubGroup subGroup)
+        public ActionResult<SubGroupViewModel> Edit(string id, SubGroupViewModel subGroup)
         {
-            if (id != subGroup.Id)
+            var item = _service.Get(id);
+            if (item == null)
             {
                 return NotFound();
             }
 
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    _context.Update(subGroup);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!SubGroupExists(subGroup.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
-            }
-            return View(subGroup);
+            item.Description = subGroup.Description;
+            item.GroupId = subGroup.Group.Id;
+            _service.Update(id, item);
+            return RedirectToAction(nameof(Index));
         }
 
         // GET: SubGroups/Delete/5
-        public async Task<IActionResult> Delete(Guid? id)
+        public ActionResult<SubGroupViewModel> Delete(string id)
         {
-            if (id == null)
+            var item = _service.Get(id);
+            if (item == null)
             {
                 return NotFound();
             }
 
-            var subGroup = await _context.SubGroup
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (subGroup == null)
-            {
-                return NotFound();
-            }
-
-            return View(subGroup);
+            return View(new SubGroupViewModel(item, _groups));
         }
 
         // POST: SubGroups/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(Guid id)
+        public ActionResult<SubGroupViewModel> DeleteConfirmed(string id)
         {
-            var subGroup = await _context.SubGroup.FindAsync(id);
-            _context.SubGroup.Remove(subGroup);
-            await _context.SaveChangesAsync();
+            var item = _service.Get(id);
+            _service.Remove(item);
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool SubGroupExists(Guid id)
-        {
-            return _context.SubGroup.Any(e => e.Id == id);
         }
     }
 }

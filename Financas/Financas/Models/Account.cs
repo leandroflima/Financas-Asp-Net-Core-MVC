@@ -2,7 +2,7 @@
 
 namespace Financas.Models
 {
-    public class Account : ModelBase
+    public class Account : Entity
     {
         public int Bank { get; set; }
 
